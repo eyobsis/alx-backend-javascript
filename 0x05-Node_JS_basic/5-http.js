@@ -1,43 +1,26 @@
 const http = require('http');
-const fs = require('fs');
+const students = require('./3-read_file_async');
+const hostname = '127.0.0.1';
+const port = 1245;
 
 const app = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
   if (req.url === '/') {
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.end('Hello Holberton School!\n');
+    res.end('Hello Holberton School!');
   } else if (req.url === '/students') {
-    const filePath = process.argv[2];
-    fs.readFile(filePath, 'utf8', (error, data) => {
-      if (error) {
-        res.writeHead(500, {'Content-Type': 'text/plain'});
-        res.end('Cannot load the database\n');
-      } else {
-        const students = data.split('\n').slice(1);
-        const studentCount = students.length;
-        const fields = {};
-        students.forEach((student) => {
-          const [_, __, _, field] = student.split(',');
-          if (!fields[field]) {
-            fields[field] = [];
-          }
-          fields[field].push(_);
-        });
-        res.writeHead(200, {'Content-Type': 'text/plain'});
-        res.end(`This is the list of our students\n`);
-        Object.keys(fields).forEach((field) => {
-          res.write(`Number of students in ${field}: ${fields[field].length}. List: ${fields[field].join(', ')}\n`);
-        });
-        res.end();
-      }
-    });
-  } else {
-    res.writeHead(404, {'Content-Type': 'text/plain'});
-    res.end('Not found\n');
+    res.write('This is the list of our students\n');
+    students(process.argv[2]).then((data) => {
+      res.write(`Number of students: ${data.students.length}\n`);
+      res.write(`Number of students in CS: ${data.csStudents.length}. List: ${data.csStudents.join(', ')}\n`);
+      res.write(`Number of students in SWE: ${data.sweStudents.length}. List: ${data.sweStudents.join(', ')}`);
+      res.end();
+    }).catch((err) => res.end(err.message));
   }
 });
-
-app.listen(1245, () => {
-  console.log('Server listening on port 1245');
+  
+app.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}`);
 });
 
 module.exports = app;
