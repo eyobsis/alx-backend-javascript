@@ -1,39 +1,29 @@
 const express = require('express');
-const fs = require('fs');
-
+const students = require('./3-read_file_async');
 const app = express();
+const hostname = '127.0.0.1';
+const port = 1245;
 
 app.get('/', (req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
   res.send('Hello Holberton School!');
 });
 
-app.get('/students', (req, res) => {
-  const filePath = process.argv[2];
-  fs.readFile(filePath, 'utf8', (error, data) => {
-    if (error) {
-      res.status(500).send('Cannot load the database');
-    } else {
-      const students = data.split('\n').slice(1);
-      const studentCount = students.length;
-      const fields = {};
-      students.forEach((student) => {
-        const [_, __, _, field] = student.split(',');
-        if (!fields[field]) {
-          fields[field] = [];
-        }
-        fields[field].push(_);
-      });
-      res.send(`This is the list of our students\n`);
-      Object.keys(fields).forEach((field) => {
-        res.write(`Number of students in ${field}: ${fields[field].length}. List: ${fields[field].join(', ')}\n`);
-      });
+app.get('/students', async (req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.write('This is the list of our students\n');
+  await students(process.argv[2]).then((data) => {
+    res.write(`Number of students: ${data.students.length}\n`);
+    res.write(`Number of students in CS: ${data.csStudents.length}. List: ${data.csStudents.join(', ')}\n`);
+    res.write(`Number of students in SWE: ${data.sweStudents.length}. List: ${data.sweStudents.join(', ')}`);
+  }).catch((err) => res.write(err.message))
+    .finally(() => {
       res.end();
-    }
-  });
+    });
 });
 
-app.listen(1245, () => {
-  console.log('Server listening on port 1245');
+app.listen(port, hostname, () => {
+    console.log(`Server running at http://${hostname}:${port}`);
 });
-
-module.exports = app;
