@@ -1,5 +1,5 @@
-const request = require('request');
-const expect = require('chai').expect;
+import request from'request';
+import { expect } from 'chai';
 
 describe('Index page', () => {
   it('should return a 200 status code', (done) => {
