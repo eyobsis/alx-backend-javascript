@@ -1,34 +1,38 @@
-const readDatabase = require('../utils');
+import readDatabase from '../utils';
 
-class StudentsController {
-    static getAllStudents(request, response) {
-        response.statusCode = 200;
-        response.setHeader('Content-Type', 'text/plain');
-        response.write('This is the list of our students\n');
-        readDatabase('./database.csv').then((data) => {
-            response.write(`Number of students in CS: ${data['CS'].length}. List: ${data['CS'].join(', ')}\n`);
-            response.write(`Number of students in SWE: ${data['SWE'].length}. List: ${data['SWE'].join(', ')}\n`);
-            response.end();
-        }).catch((err) => res.write(err.message))
-        .finally(() => {
-          res.end();
-        });
+export default class StudentsController {
+  static async getAllStudents(req, res) {
+    try {
+      const students = await readDatabase(process.argv[2]);
+      const response = `
+This is the list of our students
+${Object.keys(students)
+    .sort()
+    .map(
+      (field) => `Number of students in ${field}: ${
+        students[field].length
+      }. List: ${students[field].join(', ')}`,
+    )
+    .join('\n')}
+`;
+      res.status(200).send(response);
+    } catch (err) {
+      res.status(500).send('Cannot load the database');
     }
-    static getAllStudentsByMajor(request, response) {
-        response.statusCode = 200;
-        response.setHeader('Content-Type', 'text/plain');
-        let { major } = request.params;
-        if (major !== 'CS' && major !== 'SWE') {
-            response.statusCode = 500;
-            response.write('Major parameter must be CS or SWE\n');
-            response.end();
-            return;
-        }
-        readDatabase('./database.csv').then((data) => {
-            response.write(`List: ${data[major].join(', ')}\n`);
-            response.end();
-        }).catch((err) => response.send(err.message));
+  }
+
+  static async getAllStudentsByMajor(req, res) {
+    const { major } = req.params;
+    if (major !== 'CS' && major !== 'SWE') {
+      res.status(500).send('Major parameter must be CS or SWE');
+      return;
     }
+    try {
+      const students = await readDatabase(process.argv[2]);
+      const response = `List: ${students[major].join(', ')}`;
+      res.status(200).send(response);
+    } catch (err) {
+      res.status(500).send('Cannot load the database');
+    }
+  }
 }
-
-export default StudentsController;

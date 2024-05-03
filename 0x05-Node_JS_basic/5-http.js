@@ -1,26 +1,38 @@
-const http = require('http');
-const students = require('./3-read_file_async');
-const hostname = '127.0.0.1';
-const port = 1245;
+const express = require('express');
 
-const app = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  if (req.url === '/') {
-    res.end('Hello Holberton School!');
-  } else if (req.url === '/students') {
-    res.write('This is the list of our students\n');
-    students(process.argv[2]).then((data) => {
-      res.write(`Number of students: ${data.students.length}\n`);
-      res.write(`Number of students in CS: ${data.csStudents.length}. List: ${data.csStudents.join(', ')}\n`);
-      res.write(`Number of students in SWE: ${data.sweStudents.length}. List: ${data.sweStudents.join(', ')}`);
-      res.end();
-    }).catch((err) => res.end(err.message));
-  }
-});
-  
-app.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}`);
+const app = express();
+
+const students = [
+  { name: 'Johann', program: 'CS' },
+  { name: 'Arielle', program: 'CS' },
+  { name: 'Jonathan', program: 'CS' },
+  { name: 'Emmanuel', program: 'CS' },
+  { name: 'Guillaume', program: 'CS' },
+  { name: 'Katie', program: 'CS' },
+  { name: 'Guillaume', program: 'SWE' },
+  { name: 'Joseph', program: 'SWE' },
+  { name: 'Paul', program: 'SWE' },
+  { name: 'Tommy', program: 'SWE' },
+];
+
+app.get('/students', (req, res) => {
+  const csStudents = students.filter((student) => student.program === 'CS');
+  const sweStudents = students.filter((student) => student.program === 'SWE');
+
+  const response = `
+This is the list of our students
+Number of students: ${students.length}
+Number of students in CS: ${csStudents.length}. List: ${csStudents
+  .map((student) => student.name)
+  .join(', ')}
+Number of students in SWE: ${sweStudents.length}. List: ${sweStudents
+  .map((student) => student.name)
+  .join(', ')}
+`;
+
+  res.send(response);
 });
 
-module.exports = app;
+app.listen(1245, () => {
+  console.log('Server listening on port 1245');
+});
