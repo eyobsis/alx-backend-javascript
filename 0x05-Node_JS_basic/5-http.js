@@ -1,38 +1,67 @@
-const express = require('express');
+const http = require('http');
+const fs = require('fs').promises;
+const url = require('url');
 
-const app = express();
+const PORT = 1245;
+const databaseFile = process.argv[2];
 
-const students = [
-  { name: 'Johann', program: 'CS' },
-  { name: 'Arielle', program: 'CS' },
-  { name: 'Jonathan', program: 'CS' },
-  { name: 'Emmanuel', program: 'CS' },
-  { name: 'Guillaume', program: 'CS' },
-  { name: 'Katie', program: 'CS' },
-  { name: 'Guillaume', program: 'SWE' },
-  { name: 'Joseph', program: 'SWE' },
-  { name: 'Paul', program: 'SWE' },
-  { name: 'Tommy', program: 'SWE' },
-];
+const parseCSV = async (data) => {
+  const lines = data.split('\n').filter((line) => line.trim() !== '');
+  const students = {
+    CS: [],
+    SWE: [],
+  };
 
-app.get('/students', (req, res) => {
-  const csStudents = students.filter((student) => student.program === 'CS');
-  const sweStudents = students.filter((student) => student.program === 'SWE');
+  lines.forEach(line => {
+    const [name, field] = line.split(',');
+    if (field && (field.trim() === 'CS' || field.trim() === 'SWE')) {
+      students[field.trim()].push(name.trim());
+    }
+  });
 
-  const response = `
-This is the list of our students
-Number of students: ${students.length}
-Number of students in CS: ${csStudents.length}. List: ${csStudents
-  .map((student) => student.name)
-  .join(', ')}
-Number of students in SWE: ${sweStudents.length}. List: ${sweStudents
-  .map((student) => student.name)
-  .join(', ')}
-`;
+  return {
+    total: lines.length,
+    CS: {
+      count: students.CS.length,
+      list: students.CS.join(', '),
+    },
+    SWE: {
+      count: students.SWE.length,
+      list: students.SWE.join(', '),
+    },
+  };
+};
 
-  res.send(response);
+const app = http.createServer(async (req, res) => {
+  const reqUrl = url.parse(req.url, true);
+
+  if (reqUrl.pathname === '/') {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.write('Hello Holberton School!');
+    res.end();
+  } else if (reqUrl.pathname === '/students') {
+    try {
+      const fileData = await fs.readFile(databaseFile, 'utf8');
+      const studentsData = await parseCSV(fileData);
+      const response = `This is the list of our students\nNumber of students: ${studentsData.total}\nNumber of students in CS: ${studentsData.CS.count}. List: ${studentsData.CS.list}\nNumber of students in SWE: ${studentsData.SWE.count}. List: ${studentsData.SWE.list}`;
+      res.writeHead(200, {'Content-Type': 'text/plain'});
+      res.write(response);
+      res.end();
+    } catch (error) {
+      res.writeHead(500, {'Content-Type': 'text/plain'});
+      res.write('Error reading file');
+      res.end();
+    }
+  } else {
+    res.writeHead(404, {'Content-Type': 'text/plain'});
+    res.write('Not Found');
+    res.end();
+  }
 });
 
-app.listen(1245, () => {
-  console.log('Server listening on port 1245');
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+module.exports = app;
+
